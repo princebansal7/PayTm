@@ -1,6 +1,6 @@
 import express from "express";
 import { authTokenChecker } from "../middlewares/authTokenCheck.js";
-import { Account } from "../db.js";
+import { Account, Transaction } from "../db.js";
 import mongoose from "mongoose";
 
 const router = express.Router();
@@ -101,18 +101,26 @@ router.post("/transaction", authTokenChecker, async (req, res) => {
         }
 
         // Performing Transaction
+        const roundedAmount = Math.round(parseFloat(amount) * 100) / 100;
 
-        // - deducting amount of user to who sent the amount
+        // Use aggregation pipeline updates with $round to avoid IEEE 754 float drift
+        // - deducting amount from sender
         await Account.updateOne(
             { userId: userId },
-            { $inc: { balance: -parseFloat(amount).toFixed(2) } }
+            [{ $set: { balance: { $round: [{ $subtract: ["$balance", roundedAmount] }, 2] } } }]
         ).session(currSession);
 
-        // - increasing amount in the recipient's account
+        // - increasing amount in recipient's account
         await Account.updateOne(
             { userId: sendToUserId },
-            { $inc: { balance: parseFloat(amount).toFixed(2) } }
+            [{ $set: { balance: { $round: [{ $add: ["$balance", roundedAmount] }, 2] } } }]
         ).session(currSession);
+
+        // Record the transaction in history
+        await Transaction.create(
+            [{ fromUserId: userId, toUserId: sendToUserId, amount: roundedAmount }],
+            { session: currSession }
+        );
 
         // Commit the transaction
         await currSession.commitTransaction();
@@ -128,6 +136,31 @@ router.post("/transaction", authTokenChecker, async (req, res) => {
         });
     } finally {
         currSession.endSession();
+    }
+});
+
+router.get("/transactions", authTokenChecker, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const skip = Math.max(0, parseInt(req.query.skip) || 0);
+        const LIMIT = 7;
+
+        // fetch one extra to know if more pages exist
+        const transactions = await Transaction.find({
+            $or: [{ fromUserId: userId }, { toUserId: userId }],
+        })
+            .populate("fromUserId", "firstName lastName")
+            .populate("toUserId", "firstName lastName")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(LIMIT + 1);
+
+        const hasMore = transactions.length > LIMIT;
+        if (hasMore) transactions.pop();
+
+        res.json({ transactions, hasMore });
+    } catch (err) {
+        res.status(500).json({ msg: "Error fetching transactions", error: err });
     }
 });
 

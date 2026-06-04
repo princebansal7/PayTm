@@ -3,7 +3,7 @@ import { SubHeading } from "../components/SubHeading";
 import { Heading } from "../components/Heading";
 import { InputBox } from "../components/InputBox";
 import { BottomNote } from "../components/BottomNote";
-import { Card } from "../components/Card";
+import { AuthLayout } from "../components/AuthLayout";
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -13,30 +13,34 @@ export function Signup() {
     const [lastName, setLastName] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const navigate = useNavigate();
     return (
-        <>
-            <Card>
+        <AuthLayout>
                 <Heading label="Sign Up" />
                 <SubHeading label="Enter below details to create a new account" />
                 <form
                     onSubmit={async e => {
                         e.preventDefault();
-                        const response = await axios.post(
-                            "http://localhost:3000/api/v1/user/signup",
-                            {
-                                firstName,
-                                lastName,
-                                username,
-                                password,
-                            }
-                        );
-                        console.log(
-                            "local storage token:",
-                            response.data.token
-                        );
-                        localStorage.setItem("token", response.data.token);
-                        navigate("/dashboard");
+                        setError("");
+                        try {
+                            const response = await axios.post(
+                                "http://localhost:3000/api/v1/user/signup",
+                                {
+                                    firstName,
+                                    lastName,
+                                    username,
+                                    password,
+                                }
+                            );
+                            localStorage.setItem("token", response.data.token);
+                            navigate("/dashboard");
+                        } catch (err) {
+                            const msg =
+                                err.response?.data?.message ||
+                                "Signup failed. Please try again.";
+                            setError(msg);
+                        }
                     }}
                 >
                     <InputBox
@@ -65,6 +69,11 @@ export function Signup() {
                         type="password"
                         autocomplete="new-password"
                     />
+                    {error && (
+                        <p className="text-red-500 text-sm text-center mb-2">
+                            {error}
+                        </p>
+                    )}
                     <div className="mb-2">
                         <Button type="submit">Sign Up</Button>
                     </div>
@@ -76,7 +85,6 @@ export function Signup() {
                         to="/signin"
                     />
                 </div>
-            </Card>
-        </>
+        </AuthLayout>
     );
 }

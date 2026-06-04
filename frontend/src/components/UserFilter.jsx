@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Users } from "./Users";
 import axios from "axios";
 
-export const UserFilter = () => {
+export const UserFilter = ({ onSendMoney }) => {
     // Replace with backend call
     const [users, setUsers] = useState([]);
     const [filter, setFilter] = useState("");
@@ -53,7 +53,7 @@ export const UserFilter = () => {
             <div className="font-bold my-4 text-lg">Users</div>
             <div>
                 {users.map(user => (
-                    <Users user={user} key={user._id} />
+                    <Users user={user} key={user._id} onSendMoney={onSendMoney} />
                 ))}
             </div>
         </>

@@ -34,7 +34,7 @@ router.post(
             // Assigning user a random balance at signup, upto 10000 with 2 decimal places
             await Account.create({
                 userId,
-                balance: (Math.random() * 10000 + 1).toFixed(2),
+                balance: Math.round((Math.random() * 10000 + 1) * 100) / 100,
             });
 
             const token = jwt.sign({ userId }, JWT_SECRET);
@@ -84,17 +84,14 @@ router.get("/me", authTokenChecker, async (req, res) => {
 
 router.put("/", authTokenChecker, updateDataValidator, async (req, res) => {
     try {
-        // console.log(req.body);
         await User.updateOne({ _id: req.userId }, { $set: req.body });
+        res.json({ msg: "Details updated successfully" });
     } catch (err) {
         res.status(403).json({
             msg: "Something is wrong while data update",
             error: err,
         });
     }
-    res.json({
-        msg: "Details updated successfully",
-    });
 });
 
 // to filter users with their first or last name

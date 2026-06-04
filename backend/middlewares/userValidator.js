@@ -21,10 +21,16 @@ export const userSigninValidation = async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
-        const userExist = await User.findOne({ username, password });
-        if (!userExist) {
+        const userByUsername = await User.findOne({ username });
+        if (!userByUsername) {
             return res.status(411).json({
-                message: "user doesn't exists",
+                message: "No account found with this username.",
+            });
+        }
+        const userByPassword = await User.findOne({ username, password });
+        if (!userByPassword) {
+            return res.status(411).json({
+                message: "Incorrect password.",
             });
         }
     } catch (err) {

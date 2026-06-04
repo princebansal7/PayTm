@@ -3,7 +3,7 @@ import { SubHeading } from "../components/SubHeading";
 import { Heading } from "../components/Heading";
 import { InputBox } from "../components/InputBox";
 import { BottomNote } from "../components/BottomNote";
-import { Card } from "../components/Card";
+import { AuthLayout } from "../components/AuthLayout";
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -11,21 +11,29 @@ import { useNavigate } from "react-router-dom";
 export function Signin() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const navigate = useNavigate();
     return (
-        <>
-            <Card>
+        <AuthLayout>
                 <Heading label="Sign In" />
                 <SubHeading label="Enter below details to access your account" />
                 <form
                     onSubmit={async e => {
                         e.preventDefault();
-                        const response = await axios.post(
-                            "http://localhost:3000/api/v1/user/signin",
-                            { username, password }
-                        );
-                        localStorage.setItem("token", response.data.token);
-                        navigate("/dashboard");
+                        setError("");
+                        try {
+                            const response = await axios.post(
+                                "http://localhost:3000/api/v1/user/signin",
+                                { username, password }
+                            );
+                            localStorage.setItem("token", response.data.token);
+                            navigate("/dashboard");
+                        } catch (err) {
+                            setError(
+                                err.response?.data?.message ||
+                                    "Sign in failed. Please try again."
+                            );
+                        }
                     }}
                 >
                     <InputBox
@@ -42,6 +50,11 @@ export function Signin() {
                         type="password"
                         autocomplete="current-password"
                     />
+                    {error && (
+                        <p className="text-red-500 text-sm text-center mb-2">
+                            {error}
+                        </p>
+                    )}
                     <div className="mb-2">
                         <Button type="submit">Sign In</Button>
                     </div>
@@ -60,7 +73,6 @@ export function Signin() {
                         to="/signup"
                     />
                 </div>
-            </Card>
-        </>
+        </AuthLayout>
     );
 }

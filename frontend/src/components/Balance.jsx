@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-export const Balance = () => {
-    const [balance, setBalance] = useState(0);
+export const Balance = ({ refreshTrigger = 0 }) => {
+    const [balance, setBalance] = useState(null);
     useEffect(() => {
         const fetchBalance = async () => {
             try {
@@ -21,7 +21,9 @@ export const Balance = () => {
             }
         };
         fetchBalance();
-    }, []);
+    }, [refreshTrigger]);
+
+    if (balance === null) return null;
 
     return (
         <div className="flex">
